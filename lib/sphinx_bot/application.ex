@@ -21,7 +21,8 @@ defmodule SphinxBot.Application do
     children = [
       ExGram,
       {SphinxBot.Bot, [method: :polling, token: Application.fetch_env!(:ex_gram, :token)]},
-      {Riddles.Clock.Riddle, init_riddle_data()}
+      {Riddles.Clock.Riddle, init_riddle_data()},
+      {SphinxBot.Background, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

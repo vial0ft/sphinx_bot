@@ -28,4 +28,12 @@ defmodule Riddles.Clock.Format do
 
     clock_str_lines(clock_elems, symbols)
   end
+
+  def wrap_code(s) do
+    "```\n#{s}```"
+  end
+
+  def time2str(%Time{hour: hour, minute: mins}) do
+    "#{number_to_str_list(hour)}:#{number_to_str_list(mins)}"
+  end
 end

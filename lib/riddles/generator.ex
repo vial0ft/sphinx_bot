@@ -3,11 +3,15 @@ defmodule Riddles.Generator do
   Generate Riddle
   """
 
-  def _type_of_riddle do
+  defp type_of_riddle do
     :clock
   end
 
   def generate_riddle do
-    SphinxBot.hello()
+    case type_of_riddle() do
+      :clock -> Riddles.Clock.Riddle.one_riddle()
+      _ -> Riddles.Clock.Riddle.one_riddle()
+    end
+    
   end
 end
