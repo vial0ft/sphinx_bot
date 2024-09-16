@@ -48,9 +48,9 @@ defmodule Riddles.Store do
     {:reply, res , state}
   end
 
-  defp check_expiration ({_, {riddle, pid}, expiration}) do
+  defp check_expiration ({_, {_riddle, pid} = riddle_value, expiration}) do
     cond do
-      expiration > :os.system_time() -> {:ok, riddle}
+      expiration > :os.system_time(:seconds) -> {:ok, riddle_value}
       !Process.alive?(pid) -> {:error, "Process isn't alive"}
       :else -> {:error, "Expired"}
     end

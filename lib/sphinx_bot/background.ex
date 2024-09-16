@@ -36,6 +36,8 @@ defmodule SphinxBot.Background do
           if !right? do
             IO.puts("wrong")
             #ban_user(chat_id, user_id)
+          else
+            IO.puts("correct")
           end
       after
         duration ->

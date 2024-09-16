@@ -22,6 +22,7 @@ defmodule SphinxBot.Application do
       ExGram,
       {SphinxBot.Bot, [method: :polling, token: Application.fetch_env!(:ex_gram, :token)]},
       {Riddles.Clock.Riddle, init_riddle_data()},
+      {Riddles.Store, :riddles},
       {SphinxBot.Background, []}
     ]
 

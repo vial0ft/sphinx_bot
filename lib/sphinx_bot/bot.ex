@@ -41,8 +41,7 @@ defmodule SphinxBot.Bot do
   end
 
   def handle({:command, :riddle, msg},context) do
-    {:ok, chat} = extract_chat(msg)
-    {:ok, user} = extract_user(msg)
+    {chat, user} = extract_chat_user(msg)
     riddle = Riddles.Generator.generate_riddle()
     %{text: text, opts: opts} = riddle
     spawn(fn -> :timer.sleep(1000); answer(context, "hi!") end)
@@ -54,8 +53,22 @@ defmodule SphinxBot.Bot do
     ) |> send_answers
 
      msg_id = extract_response_msg_id(resp)
-     _pid = SphinxBot.Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
+     pid = SphinxBot.Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
+     {:ok, key } = Riddles.Store.add("#{chat.id}_#{user.id}",{riddle, pid})
+     IO.puts(inspect(key))
   end
+
+  def handle({:callback_query, callback_query}, _context) do
+    {chat, user} = extract_chat_user(callback_query)
+  	right? = extract_callback_data(callback_query) |>  String.to_atom()
+    case Riddles.Store.get("#{chat.id}_#{user.id}") do
+      {:ok, {_, pid}} ->
+        send(pid, {:answer, right?})
+      {:error, why} ->
+        IO.puts("ignore: #{why}")
+        :ignore
+    end
+  end 
 
   def handle({:command, :help, _msg}, context) do
     # IO.puts(context)
@@ -79,6 +92,17 @@ defmodule SphinxBot.Bot do
 
   defp riddle_opt_2_btn(%{text: text, right?: right?}) do
     %{text: text, callback_data: to_string(right?)}
+  end
+
+  defp extract_chat_user(some_request) do
+    with {:ok, chat} <- extract_chat(some_request),
+         {:ok, user} <- extract_user(some_request)  do
+    	{chat, user}
+    end
+  end
+
+  defp extract_callback_data(callback) do
+    callback.data
   end
 
   defp extract_response_msg_id(%ExGram.Cnt{responses: [ok: msg]}) do
