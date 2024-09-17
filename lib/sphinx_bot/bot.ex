@@ -3,8 +3,9 @@ defmodule SphinxBot.Bot do
   Bot handlers
   """
   require Logger
-
   require ExGram.Dsl.Keyboard
+
+  alias ExGram.Model
 
   @waiting_answer_duration 60 * 1000
   @bot :sphinx_bot
@@ -62,7 +63,7 @@ defmodule SphinxBot.Bot do
 
   def handle(
     {:message,
-     %ExGram.Model.Message{chat: chat, new_chat_members: new_users_list}},
+     %Model.Message{chat: chat, new_chat_members: new_users_list}},
     context
   ) when is_list(new_users_list) do
     IO.puts("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
@@ -88,6 +89,10 @@ defmodule SphinxBot.Bot do
     IO.puts("Unknown message " <> inspect(msg, pretty: true))
   end
 
+  @spec generate_riddle_for_user(
+    Model.Chat.t(),
+    Model.User.t(),
+    ExGram.Cnt.t()) :: any()
   defp generate_riddle_for_user(chat, user, context) do
     riddle = Riddles.Generator.generate_riddle()
     %{text: text, opts: opts} = riddle
@@ -122,10 +127,12 @@ defmodule SphinxBot.Bot do
     end
   end
 
+  @spec extract_callback_data(Model.CallbackQuery.t()) :: bitstring()
   defp extract_callback_data(callback) do
     callback.data
   end
 
+  @spec extract_response_msg_id(ExGram.Cnt.t()) :: integer()
   defp extract_response_msg_id(%ExGram.Cnt{responses: [ok: msg]}) do
     msg.message_id
   end
