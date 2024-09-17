@@ -25,23 +25,23 @@ defmodule SphinxBot.Background do
   @spec ban_user(integer(), integer()) :: :ok
   @spec ban_user(integer(), integer(), boolean()) :: :ok
   def ban_user(chat_id, user_id, revoke_messages \\ true) do
-    GenServer.cast(:backgriound, {:ban, chat_id, user_id, revoke_messages})
+    GenServer.cast(:background, {:ban, {chat_id, user_id, revoke_messages}})
   end
 
   @spec waiting_for_answer(integer(), {integer(), integer()}, integer()) :: pid()
-  def waiting_for_answer(msg_id, {chat_id, _user_id}, duration) do
+  def waiting_for_answer(msg_id, {chat_id, user_id}, duration) do
   	spawn(fn ->
       receive do
       	{:answer, right?} ->
           if !right? do
             IO.puts("wrong")
-            #ban_user(chat_id, user_id)
+            ban_user(chat_id, user_id)
           else
             IO.puts("correct")
           end
       after
         duration ->
-          # ban_user(chat_id, user_id)
+          ban_user(chat_id, user_id)
           IO.puts("timeout of waiting")
       end
 

@@ -18,7 +18,7 @@ defmodule Riddles.Clock.RiddleMessage do
     """
     Сейчас на часах:
     #{Format.wrap_code(clockStr)}
-    Ответь: сколько времени #{how_much_time_question_part}?
+    Ответь: сколько времени #{how_much_time_question_part}?\n
     """
   end
 end

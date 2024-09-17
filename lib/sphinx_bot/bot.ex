@@ -42,20 +42,7 @@ defmodule SphinxBot.Bot do
 
   def handle({:command, :riddle, msg},context) do
     {chat, user} = extract_chat_user(msg)
-    riddle = Riddles.Generator.generate_riddle()
-    %{text: text, opts: opts} = riddle
-    spawn(fn -> :timer.sleep(1000); answer(context, "hi!") end)
-    resp =  answer(
-      context,
-      text,
-      parse_mode: "MarkdownV2",
-      reply_markup: opts |> Enum.map(&riddle_opt_2_btn/1) |> Enum.split(2) |> as_list |> create_inline
-    ) |> send_answers
-
-     msg_id = extract_response_msg_id(resp)
-     pid = SphinxBot.Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
-     {:ok, key } = Riddles.Store.add("#{chat.id}_#{user.id}",{riddle, pid})
-     IO.puts(inspect(key))
+    generate_riddle_for_user(chat, user, context)
   end
 
   def handle({:callback_query, callback_query}, _context) do
@@ -73,9 +60,16 @@ defmodule SphinxBot.Bot do
     end
   end
 
-  # TODO: https://github.com/rockneurotiko/ex_gram/blob/58f6bb1912a5d938360a89def49411c8cdcc8022/lib/ex_gram.ex#L1535
-  def handle({:update, update}, _context) do
-    update.chat_join_request
+  def handle(
+    {:message,
+     %ExGram.Model.Message{chat: chat, new_chat_members: new_users_list}},
+    context
+  ) when is_list(new_users_list) do
+    IO.puts("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
+    for user <- new_users_list do
+      generate_riddle_for_user(chat, user, context)
+    end
+
   end
 
   def handle({:command, :help, _msg}, context) do
@@ -83,15 +77,34 @@ defmodule SphinxBot.Bot do
     answer(context, "Here is your help:")
   end
 
-  def handle({:text, txt, msg}, context) do
-    IO.puts(":txt")
-    IO.puts(inspect(txt))
-    IO.puts(inspect(msg))
-    answer(context, txt)
-  end
+  # def handle({:text, txt, msg}, context) do
+  #   IO.puts(":txt")
+  #   IO.puts(inspect(txt))
+  #   IO.puts(inspect(msg))
+  #   answer(context, txt)
+  # end
 
   def handle(msg, _cnt) do
     IO.puts("Unknown message " <> inspect(msg, pretty: true))
+  end
+
+  defp generate_riddle_for_user(chat, user, context) do
+    riddle = Riddles.Generator.generate_riddle()
+    %{text: text, opts: opts} = riddle
+    formatted_text =
+      text
+      |> SphinxBot.Format.add_user(user)
+      |> SphinxBot.Format.add_sec_time_limit(60)
+    resp =  answer(
+      context,
+      formatted_text,
+      parse_mode: "MarkdownV2",
+      reply_markup: opts |> Enum.map(&riddle_opt_2_btn/1) |> Enum.split(2) |> as_list |> create_inline
+    ) |> send_answers
+
+    msg_id = extract_response_msg_id(resp)
+    pid = SphinxBot.Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
+    Riddles.Store.add("#{chat.id}_#{user.id}",{riddle, pid})
   end
 
   defp as_list({f,s}) do

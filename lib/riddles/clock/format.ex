@@ -12,7 +12,7 @@ defmodule Riddles.Clock.Format do
                  Map.get(symbols, ":") |> Enum.at(line_idx),
                  Enum.at(clock_elems, 2) |> Enum.at(line_idx),
                  Enum.at(clock_elems, 3) |> Enum.at(line_idx),
-                "\n"], " ")
+                 "\n"], "　")
     end
     Enum.join(res)
   end
