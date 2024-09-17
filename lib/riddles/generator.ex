@@ -4,7 +4,10 @@ defmodule Riddles.Generator do
   """
 
   defp type_of_riddle do
-    :clock
+    case Enum.random(1..1) do
+      1 -> :clock
+      _ -> :default
+    end
   end
 
   def generate_riddle do
@@ -12,6 +15,5 @@ defmodule Riddles.Generator do
       :clock -> Riddles.Clock.Riddle.one_riddle()
       _ -> Riddles.Clock.Riddle.one_riddle()
     end
-    
   end
 end

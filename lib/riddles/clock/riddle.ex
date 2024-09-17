@@ -36,13 +36,14 @@ defmodule Riddles.Clock.Riddle do
     riddle_time = Time.utc_now() |> Time.add(Enum.random(-59..59), :minute)
     additional_minutes = Enum.random(-59..59)
     answer = Time.add(riddle_time, additional_minutes, :minute)
-    opts = [%{time: answer, right?: true} | gen_riddle_fake_opts(3)]
-    riddle_opts = opts |> Enum.map(&riddle_opt_format/1) |> Enum.shuffle
+    riddle_opts =
+      [%{time: answer, right?: true} | gen_riddle_fake_opts(3)]
+      |> Enum.map(&riddle_opt_format/1)
+      |> Enum.shuffle
     {:reply,
      %{
+       type: :clock,
        answer: answer,
-       additional_minutes: additional_minutes,
-       riddle_time: riddle_time,
        text:  RiddleMessage.riddle_text(riddle_time, additional_minutes, symbols),
        opts: riddle_opts
      },

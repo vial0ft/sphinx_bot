@@ -52,7 +52,6 @@ defmodule SphinxBot.Background do
   @impl true
   @spec handle_cast({:delete_msgs, {integer(),list(integer())}}, any()) :: {:noreply, any()}
   def handle_cast({:delete_msgs, {chat_id, msg_ids}}, state) do
-    IO.puts("chat_id #{chat_id} messages ids #{inspect(msg_ids)}")
   	ExGram.delete_messages(chat_id, msg_ids)
     {:noreply, state}
   end

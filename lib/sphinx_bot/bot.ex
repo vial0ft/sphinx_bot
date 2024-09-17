@@ -60,15 +60,23 @@ defmodule SphinxBot.Bot do
 
   def handle({:callback_query, callback_query}, _context) do
     {chat, user} = extract_chat_user(callback_query)
-  	right? = extract_callback_data(callback_query) |>  String.to_atom()
     case Riddles.Store.get("#{chat.id}_#{user.id}") do
-      {:ok, {_, pid}} ->
+      {:ok, {riddle, pid}} ->
+        right? =
+          callback_query
+          |> extract_callback_data
+          |> Riddles.Checker.check_answer(riddle)
         send(pid, {:answer, right?})
       {:error, why} ->
         IO.puts("ignore: #{why}")
         :ignore
     end
-  end 
+  end
+
+  # TODO: https://github.com/rockneurotiko/ex_gram/blob/58f6bb1912a5d938360a89def49411c8cdcc8022/lib/ex_gram.ex#L1535
+  def handle({:update, update}, _context) do
+    update.chat_join_request
+  end
 
   def handle({:command, :help, _msg}, context) do
     # IO.puts(context)
@@ -83,7 +91,7 @@ defmodule SphinxBot.Bot do
   end
 
   def handle(msg, _cnt) do
-    IO.puts("Unknown message " <> inspect(msg))
+    IO.puts("Unknown message " <> inspect(msg, pretty: true))
   end
 
   defp as_list({f,s}) do
