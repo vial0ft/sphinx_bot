@@ -3,7 +3,7 @@ defmodule SphinxBot.Format do
   alias ExGram.Model
 
   def add_sec_time_limit(text, limit) do
-    "#{text}\nНа рзмышление #{limit} сек"
+    "#{text}\nНа размышление #{limit} сек"
   end
 
 

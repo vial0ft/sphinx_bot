@@ -25,25 +25,21 @@ defmodule SphinxBot.Bot do
 
   def bot(), do: @bot
 
-  def handle({:command, :start, _msg}, context) do
-    answer(context, "Hi!")
-  end
-
-  def handle({:command, :hello, _msg}, context) do
-    answer(context, "Hello!")
-  end
-
+  def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
+  def handle({:command, :hello, _msg}, context), do: answer(context, "Hello!")
+  def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
   def handle({:command, :time, _msg}, context) do
     symbols = GenServer.call(:riddle_clock, :symbols)
-    time = Time.utc_now()
-    |> Riddles.Clock.Format.convert_time(symbols)
-    |> Riddles.Clock.Format.wrap_code()
+    time =
+      Time.utc_now()
+      |> Riddles.Clock.Format.convert_time(symbols)
+      |> Riddles.Clock.Format.wrap_code()
     answer(context, time, parse_mode: "MarkdownV2")
   end
 
   def handle({:command, :riddle, msg},context) do
-    {chat, user} = extract_chat_user(msg)
-    generate_riddle_for_user(chat, user, context)
+    extract_chat_user(msg)
+    |> generate_riddle_for_user(context)
   end
 
   def handle({:callback_query, callback_query}, _context) do
@@ -67,49 +63,51 @@ defmodule SphinxBot.Bot do
     context
   ) when is_list(new_users_list) do
     IO.puts("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
-    for user <- new_users_list do
-      generate_riddle_for_user(chat, user, context)
+    Enum.each(new_users_list, fn user -> generate_riddle_for_user({chat, user}, context)  end)
+  end
+
+  def handle({:text, _ , msg}, _) do
+    IO.puts(":txt")
+   # IO.puts(inspect(txt))
+    cu = {chat, user} = extract_chat_user(msg)
+    IO.puts(inspect(cu))
+    case Riddles.Store.get(riddle_store_key(cu)) do
+      {:ok, _} -> SphinxBot.Background.ban_user(chat.id, user.id)
+      _ -> :do_nothing
     end
-
   end
 
-  def handle({:command, :help, _msg}, context) do
-    # IO.puts(context)
-    answer(context, "Here is your help:")
-  end
+  #default handler
+  def handle(msg, _cnt), do: IO.puts("Unknown message " <> inspect(msg, pretty: true))
 
-  # def handle({:text, txt, msg}, context) do
-  #   IO.puts(":txt")
-  #   IO.puts(inspect(txt))
-  #   IO.puts(inspect(msg))
-  #   answer(context, txt)
-  # end
-
-  def handle(msg, _cnt) do
-    IO.puts("Unknown message " <> inspect(msg, pretty: true))
-  end
-
-  @spec generate_riddle_for_user(
-    Model.Chat.t(),
-    Model.User.t(),
-    ExGram.Cnt.t()) :: any()
-  defp generate_riddle_for_user(chat, user, context) do
-    riddle = Riddles.Generator.generate_riddle()
-    %{text: text, opts: opts} = riddle
+  @spec generate_riddle_for_user({Model.Chat.t(), Model.User.t()},ExGram.Cnt.t()) :: any
+  defp generate_riddle_for_user({chat,user} = ch_u, context) do
+    %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
     formatted_text =
       text
       |> SphinxBot.Format.add_user(user)
       |> SphinxBot.Format.add_sec_time_limit(60)
-    resp =  answer(
+
+    resp = answer(
       context,
       formatted_text,
       parse_mode: "MarkdownV2",
-      reply_markup: opts |> Enum.map(&riddle_opt_2_btn/1) |> Enum.split(2) |> as_list |> create_inline
+      reply_markup: prepare_opts(opts)
     ) |> send_answers
+    pid =
+      extract_response_msg_id(resp)
+      |> SphinxBot.Background.waiting_for_answer({chat.id, user.id}, @waiting_answer_duration)
 
-    msg_id = extract_response_msg_id(resp)
-    pid = SphinxBot.Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
-    Riddles.Store.add("#{chat.id}_#{user.id}",{riddle, pid})
+    riddle_store_key(ch_u)
+    |> Riddles.Store.add({riddle, pid})
+  end
+
+  defp prepare_opts(opts) do
+    opts
+    |> Enum.map(&riddle_opt_2_btn/1)
+    |> Enum.split(2)
+    |> as_list
+    |> create_inline
   end
 
   defp as_list({f,s}) do
@@ -127,7 +125,6 @@ defmodule SphinxBot.Bot do
     end
   end
 
-  @spec extract_callback_data(Model.CallbackQuery.t()) :: bitstring()
   defp extract_callback_data(callback) do
     callback.data
   end
@@ -136,4 +133,7 @@ defmodule SphinxBot.Bot do
   defp extract_response_msg_id(%ExGram.Cnt{responses: [ok: msg]}) do
     msg.message_id
   end
+
+  @spec riddle_store_key({Model.Chat.t(), Model.User.t()}) :: bitstring()
+  defp riddle_store_key({chat, user}), do: "#{chat.id}_#{user.id}"
 end

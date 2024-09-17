@@ -25,6 +25,7 @@ defmodule SphinxBot.Background do
   @spec ban_user(integer(), integer()) :: :ok
   @spec ban_user(integer(), integer(), boolean()) :: :ok
   def ban_user(chat_id, user_id, revoke_messages \\ true) do
+    #IO.puts("ban for #{inspect(chat_id)}, user #{inspect(user_id)}")
     GenServer.cast(:background, {:ban, {chat_id, user_id, revoke_messages}})
   end
 
@@ -59,7 +60,7 @@ defmodule SphinxBot.Background do
   @impl true
   @spec handle_cast({:ban, {integer(), integer(), boolean()}}, any()) :: {:noreply, any()}
   def handle_cast({:ban, {chat_id, user_id, revoke_messages}}, state) do
-  	IO.puts("chat_id #{chat_id}, ban #{user_id}")
+  	#IO.puts("chat_id #{chat_id}, ban #{user_id}")
     ExGram.ban_chat_member(chat_id, user_id, revoke_messages: revoke_messages)
     {:noreply, state}
   end
