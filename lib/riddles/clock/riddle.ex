@@ -27,10 +27,6 @@ defmodule Riddles.Clock.Riddle do
     {:ok, symbols}
   end
 
-  def handle_call(:symbols, _from, state) do
-  	{:reply, state, state}
-  end
-
   @impl true
   def handle_call(:riddle, _from, symbols) do
     riddle_time = Time.utc_now() |> Time.add(Enum.random(-59..59), :minute)

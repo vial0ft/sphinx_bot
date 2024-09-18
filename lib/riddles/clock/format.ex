@@ -20,7 +20,7 @@ defmodule Riddles.Clock.Format do
     |> Enum.join()
   end
 
-  @spec convert_time(Time.t(), map()) :: binary()
+  @spec convert_time(Time.t(), map()) :: nonempty_bitstring()
   def convert_time(%Time{hour: hour, minute: mins}, symbols) do
     h = number_to_str_list(hour)
     m = number_to_str_list(mins)
@@ -32,11 +32,12 @@ defmodule Riddles.Clock.Format do
     clock_str_lines(clock_elems, symbols)
   end
 
+  @spec wrap_code(bitstring()) :: nonempty_bitstring()
   def wrap_code(s) do
     "```\n#{s}```"
   end
 
-  @spec time2str(Time.t()) :: nonempty_binary()
+  @spec time2str(Time.t()) :: nonempty_bitstring()
   def time2str(%Time{hour: hour, minute: mins}) do
     "#{number_to_str_list(hour)}:#{number_to_str_list(mins)}"
   end

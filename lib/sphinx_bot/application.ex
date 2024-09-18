@@ -5,7 +5,8 @@ defmodule SphinxBot.Application do
 
   use Application
 
-  defp init_riddle_data do
+  @spec init_riddle_data() :: map()
+  def init_riddle_data do
     with {:ok, symbols_str} <- File.read("resources/clock_symbols.json"),
          {:ok, symbols} <- Jason.decode(symbols_str)
       do
