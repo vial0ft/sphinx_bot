@@ -4,6 +4,7 @@ defmodule Riddles.Store do
   """
 
   @default_ttl_sec 60
+  @clean_up_period 5 * 60 * 1000
   use GenServer
 
   def start_link(default) do
@@ -25,6 +26,7 @@ defmodule Riddles.Store do
   @impl true
   def init(riddle_table_name) do
     :ets.new(riddle_table_name, [:set, :public, :named_table])
+    schedule_clean()
     {:ok, %{table: riddle_table_name}}
   end
 
@@ -48,7 +50,14 @@ defmodule Riddles.Store do
     {:reply, res , state}
   end
 
-  defp check_expiration ({_, {_riddle, pid} = riddle_value, expiration}) do
+  defp check_expiration({_, {_riddle, pid} = riddle_value}) do
+    cond do
+      !Process.alive?(pid) -> {:error, "Process isn't alive"}
+      :else -> {:ok, riddle_value}
+    end
+  end 
+
+  defp check_expiration({_, {_riddle, pid} = riddle_value, expiration}) do
     cond do
       expiration > :os.system_time(:seconds) -> {:ok, riddle_value}
       !Process.alive?(pid) -> {:error, "Process isn't alive"}
@@ -57,8 +66,27 @@ defmodule Riddles.Store do
   end
 
   @impl true
-  def handle_cast(:clean, state) do
-  	{:noreply, state}
+  def handle_info(:clean, %{:table => table} = state) do
+    IO.puts("run cleanup")
+    ms = :os.system_time(:seconds) |> ms4moment()
+    delete = :ets.select_delete(table, ms)
+    IO.puts("delete count: #{delete}")
+    schedule_clean()
+    {:noreply, state}
+  end
+
+  defp ms4moment(moment) do
+    [{
+      {:"$1", :"$2",:"$3"},
+      [
+        {:>=, {:const, moment}, :"$3"}
+      ],
+      [true],
+      }]
+  end
+
+  defp schedule_clean() do
+    Process.send_after(self(), :clean, @clean_up_period)
   end
 end
 
