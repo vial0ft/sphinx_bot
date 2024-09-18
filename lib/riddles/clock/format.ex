@@ -1,7 +1,10 @@
 defmodule Riddles.Clock.Format do
 
   defp number_to_str_list(num) do
-    Integer.to_string(num) |> String.pad_leading(2, "0") |> String.split("", trim: true)
+    num
+    |> Integer.to_string
+    |> String.pad_leading(2, "0")
+    |> String.split("", trim: true)
   end
 
   defp clock_str_lines(clock_elems, symbols) do
@@ -33,6 +36,7 @@ defmodule Riddles.Clock.Format do
     "```\n#{s}```"
   end
 
+  @spec time2str(Time.t()) :: nonempty_binary()
   def time2str(%Time{hour: hour, minute: mins}) do
     "#{number_to_str_list(hour)}:#{number_to_str_list(mins)}"
   end
