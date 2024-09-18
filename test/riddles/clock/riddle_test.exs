@@ -3,10 +3,6 @@ defmodule Riddles.Clock.RiddleTest do
   use ExUnit.Case
   doctest Riddles.Clock.Riddle
 
-  # setup_all do
-  # 	symbols = SphinxBot.Application.init_riddle_data()
-  # 	Riddles.Clock.Riddle.start_link(symbols)
-  # end
 describe "Clock.Riddle" do
     test("Generate clock riddle") do
   	  %{
