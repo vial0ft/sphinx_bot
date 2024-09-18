@@ -5,13 +5,14 @@ defmodule Riddles.Clock.Format do
   end
 
   defp clock_str_lines(clock_elems, symbols) do
-    for line_idx <- 0..5 do
-      Enum.join([Enum.at(clock_elems, 0) |> Enum.at(line_idx),
-                 Enum.at(clock_elems, 1) |> Enum.at(line_idx),
-                 Map.get(symbols, ":")   |> Enum.at(line_idx),
-                 Enum.at(clock_elems, 2) |> Enum.at(line_idx),
-                 Enum.at(clock_elems, 3) |> Enum.at(line_idx),
-                ], " ") <> "\n"
+    for line_idx <- 0..4 do
+      Enum.join(
+        [Enum.at(clock_elems, 0) |> Enum.at(line_idx),
+         Enum.at(clock_elems, 1) |> Enum.at(line_idx),
+         Map.get(symbols, ":")   |> Enum.at(line_idx),
+         Enum.at(clock_elems, 2) |> Enum.at(line_idx),
+         Enum.at(clock_elems, 3) |> Enum.at(line_idx),
+        ], Map.get(symbols, " ") |> Enum.at(line_idx)) <> "\n"
     end
     |> Enum.join()
   end
