@@ -15,10 +15,8 @@ defmodule SphinxBot.Bot do
     setup_commands: true
 
   command("start")
-  command("hello")
   command("time")
   command("riddle")
-  command("keyboard")
   command("help", description: "Print the bot's help")
 
   middleware(ExGram.Middleware.IgnoreUsername)
@@ -26,7 +24,6 @@ defmodule SphinxBot.Bot do
   def bot(), do: @bot
 
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
-  def handle({:command, :hello, _msg}, context), do: answer(context, "Hello!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
   def handle({:command, :time, _msg}, context) do
     symbols = GenServer.call(:riddle_clock, :symbols)
