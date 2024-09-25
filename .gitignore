@@ -27,5 +27,3 @@ sphinx_bot-*.tar
 
 /.env
 
-
-mix.lock
