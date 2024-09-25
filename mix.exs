@@ -14,7 +14,7 @@ defmodule SphinxBot.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :wx, :observer, :runtime_tools],
       mod: {SphinxBot.Application, []}
     ]
   end
@@ -23,6 +23,7 @@ defmodule SphinxBot.MixProject do
   defp deps do
     [
       # {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
       {:ex_gram, "~> 0.53"},
       {:tesla, "~> 1.2"},
       {:jason, ">= 1.0.0"},
