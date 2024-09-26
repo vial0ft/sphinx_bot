@@ -2,6 +2,7 @@ defmodule Riddles.Store do
   @moduledoc """
   Riddle storage
   """
+require Logger
 
   @default_ttl_sec 60
   @clean_up_period 5 * 60 * 1000
@@ -67,10 +68,10 @@ defmodule Riddles.Store do
 
   @impl true
   def handle_info(:clean, %{:table => table} = state) do
-    IO.puts("run cleanup")
+    Logger.debug("run cleanup")
     ms = :os.system_time(:seconds) |> ms4moment()
     delete = :ets.select_delete(table, ms)
-    IO.puts("delete count: #{delete}")
+    Logger.debug("delete count: #{delete}")
     schedule_clean()
     {:noreply, state}
   end

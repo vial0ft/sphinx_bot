@@ -3,6 +3,7 @@ defmodule SphinxBot.Background do
   @moduledoc """
   Delete Messages, ban users
   """
+  require Logger
   use GenServer
   require ExGram
 
@@ -35,15 +36,15 @@ defmodule SphinxBot.Background do
       receive do
       	{:answer, right?} ->
           if !right? do
-            IO.puts("wrong")
+            Logger.debug("#{chat_id} #{user_id} wrong")
             ban_user(chat_id, user_id)
           else
-            IO.puts("correct")
+            Logger.debug("#{chat_id} #{user_id} correct")
           end
       after
         duration ->
           ban_user(chat_id, user_id)
-          IO.puts("timeout of waiting")
+          Logger.debug("timeout of waiting")
       end
 
       delete_message(chat_id, msg_id)

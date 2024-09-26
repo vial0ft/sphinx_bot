@@ -46,7 +46,7 @@ defmodule SphinxBot.Bot do
     {:message,
      %Model.Message{chat: chat, new_chat_members: new_users_list}},
     context) when is_list(new_users_list) do
-    IO.puts("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
+    Logger.info("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
     Enum.each(
       new_users_list,
       fn user ->
@@ -54,13 +54,12 @@ defmodule SphinxBot.Bot do
   end
 
   def handle({:text, _ , msg}, _) do
-    IO.puts(":txt")
     cu = extract_chat_user(msg)
     SphinxBot.RealBotLogic.handle(:text, cu)
   end
 
   #default handler
-  def handle(msg, _cnt), do: IO.puts("Unknown message " <> inspect(msg, pretty: true))
+  def handle(msg, _cnt), do: Logger.info("Unknown message " <> inspect(msg, pretty: true))
 
 
   defp riddle_sender(ctx) do
@@ -75,28 +74,6 @@ defmodule SphinxBot.Bot do
         |> extract_response_msg_id
     end
   end
-
-  # @spec _generate_riddle_for_user({Model.Chat.t(), Model.User.t()},ExGram.Cnt.t()) :: any
-  # defp _generate_riddle_for_user({chat,user} = ch_u, context) do
-  #   %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
-  #   formatted_text =
-  #     text
-  #     |> SphinxBot.Format.add_user(user)
-  #     |> SphinxBot.Format.add_sec_time_limit(60)
-
-  #   resp = answer(
-  #     context,
-  #     formatted_text,
-  #     parse_mode: "MarkdownV2",
-  #     reply_markup: prepare_opts(opts)
-  #   ) |> send_answers
-  #   pid =
-  #     extract_response_msg_id(resp)
-  #     |> SphinxBot.Background.waiting_for_answer({chat.id, user.id}, @waiting_answer_duration)
-
-  #   riddle_store_key(ch_u)
-  #   |> Riddles.Store.add({riddle, pid})
-  # end
 
   defp prepare_opts(opts) do
     opts
