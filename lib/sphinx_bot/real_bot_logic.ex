@@ -11,7 +11,7 @@ defmodule SphinxBot.RealBotLogic do
 
   @impl true
   def handle(:time) do
-    symbols = GenServer.call(:riddle_clock, :symbols)
+    symbols = GenServer.call(Riddles.Clock.Riddle, :symbols)
 
     Time.utc_now()
     |> Riddles.Clock.Format.convert_time(symbols)

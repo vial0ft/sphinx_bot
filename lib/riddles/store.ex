@@ -9,16 +9,16 @@ require Logger
   use GenServer
 
   def start_link(default) do
-    GenServer.start_link(__MODULE__, default, name: :riddle_storage)
+    GenServer.start_link(__MODULE__, default, name: __MODULE__)
   end
 
   @spec add(bitstring(), {any(), pid()}) :: any()
   def add(key, {_riddle, _waiting_pid} = value) do
-    GenServer.call(:riddle_storage, {:add, key, value})
+    GenServer.call(__MODULE__, {:add, key, value})
   end
 
   def get(key) do
-    GenServer.call(:riddle_storage, {:get, key})
+    GenServer.call(__MODULE__, {:get, key})
   end
 
 

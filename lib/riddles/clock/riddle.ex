@@ -11,11 +11,11 @@ defmodule Riddles.Clock.Riddle do
 
   @spec start_link(map()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(symbols) do
-    GenServer.start_link(__MODULE__, symbols, name: :riddle_clock)
+    GenServer.start_link(__MODULE__, symbols, name: __MODULE__)
   end
 
   def one_riddle() do
-    GenServer.call(:riddle_clock, :riddle)
+    GenServer.call(__MODULE__, :riddle)
   end
 
 
@@ -25,6 +25,11 @@ defmodule Riddles.Clock.Riddle do
   @spec init(map()) :: :ignore | {:error, any()} | {:ok, pid()}
   def init(symbols) do
     {:ok, symbols}
+  end
+
+  @impl true
+  def handle_call(:symbols, _, symbols) do
+    {:reply, symbols, symbols}
   end
 
   @impl true

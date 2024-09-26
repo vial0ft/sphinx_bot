@@ -9,7 +9,7 @@ defmodule SphinxBot.Background do
 
   @spec start_link(any()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(_) do
-    GenServer.start_link(__MODULE__, [], name: :background)
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   @impl true
@@ -20,14 +20,13 @@ defmodule SphinxBot.Background do
 
   @spec delete_message(any(), any()) :: :ok
   def delete_message(chat_id, msg_id) do
-    GenServer.cast(:background, {:delete_msgs, {chat_id, [msg_id]}})
+    GenServer.cast(__MODULE__, {:delete_msgs, {chat_id, [msg_id]}})
   end
 
   @spec ban_user(integer(), integer()) :: :ok
   @spec ban_user(integer(), integer(), boolean()) :: :ok
   def ban_user(chat_id, user_id, revoke_messages \\ true) do
-    #IO.puts("ban for #{inspect(chat_id)}, user #{inspect(user_id)}")
-    GenServer.cast(:background, {:ban, {chat_id, user_id, revoke_messages}})
+    GenServer.cast(__MODULE__, {:ban, {chat_id, user_id, revoke_messages}})
   end
 
   @spec waiting_for_answer(integer(), {integer(), integer()}, integer()) :: pid()
@@ -61,7 +60,7 @@ defmodule SphinxBot.Background do
   @impl true
   @spec handle_cast({:ban, {integer(), integer(), boolean()}}, any()) :: {:noreply, any()}
   def handle_cast({:ban, {chat_id, user_id, revoke_messages}}, state) do
-  	#IO.puts("chat_id #{chat_id}, ban #{user_id}")
+  	Logger.info("chat_id #{chat_id}, ban #{user_id}")
     ExGram.ban_chat_member(chat_id, user_id, revoke_messages: revoke_messages)
     {:noreply, state}
   end
