@@ -18,7 +18,6 @@ defmodule Riddles.Clock.Riddle do
     GenServer.call(__MODULE__, :riddle)
   end
 
-
   # Server
 
   @impl true

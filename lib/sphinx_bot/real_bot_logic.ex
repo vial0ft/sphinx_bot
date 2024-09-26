@@ -18,7 +18,6 @@ defmodule SphinxBot.RealBotLogic do
     |> Riddles.Clock.Format.wrap_code()
   end
 
-  
   @impl true
   def handle(:riddle, {chat, user} = ch_u , send_riddle_func) do
     %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
@@ -62,6 +61,6 @@ defmodule SphinxBot.RealBotLogic do
   end
 
   @spec riddle_store_key({Model.Chat.t(), Model.User.t()}) :: bitstring()
-  defp riddle_store_key({chat, user}), do: "#{chat.id}_#{user.id}"
+  def riddle_store_key({chat, user}), do: "#{chat.id}_#{user.id}"
 
 end

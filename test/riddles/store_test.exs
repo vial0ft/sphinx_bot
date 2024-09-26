@@ -13,6 +13,7 @@ defmodule Riddles.StoreTest do
     assert Store.get("not_exist") == {:error, "Not found"}
   end
 
+  @tag :slow
   test ("getting expired riddle (1 min expiration)") do
     {:ok, key} = Store.add("riddle", {:riddle, self()})
     assert Store.get(key) == {:ok, {:riddle, self()}}
