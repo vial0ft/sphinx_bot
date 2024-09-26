@@ -6,7 +6,7 @@ defmodule SphinxBot.RealBotLogicTest do
   doctest SphinxBot.RealBotLogic
 
   test("time") do
-    assert is_bitstring(RealBotLogic.handle(:time))
+    assert is_bitstring(RealBotLogic.time())
   end
 
   test("creating riddle and handle answer") do
@@ -15,13 +15,11 @@ defmodule SphinxBot.RealBotLogicTest do
     responce_msg_id = 100
     ch_u = {chat, user}
     key = RealBotLogic.riddle_store_key(ch_u)
-  	assert RealBotLogic.handle(:riddle, ch_u, mock_sender(responce_msg_id)) == {:ok, key}
+  	assert RealBotLogic.riddle(ch_u, mock_sender(responce_msg_id)) == {:ok, key}
 
     assert {:ok, {riddle, riddle_pid}} = Store.get(key)
     assert riddle != nil
     assert Process.alive?(riddle_pid)
-
-
   end
 
   defp mock_sender(resp_msg_id) do

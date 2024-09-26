@@ -16,6 +16,12 @@ defmodule SphinxBot.Application do
       end
   end
 
+
+  def get_bot_id() do
+    {bot_id, _} = Integer.parse(Application.fetch_env!(:sphinx, :bot_id))
+    bot_id
+  end
+
   @impl true
   def start(_type, _args) do
 
@@ -24,7 +30,11 @@ defmodule SphinxBot.Application do
       {SphinxBot.Bot, [method: :polling, token: Application.fetch_env!(:ex_gram, :token)]},
       {Riddles.Clock.Riddle, init_riddle_data()},
       {Riddles.Store, :riddles},
-      {SphinxBot.Background, []}
+      {SphinxBot.Background, []},
+      %{
+        id: SphinxBot.RealBotLogic,
+        start: {SphinxBot.RealBotLogic, :start_link, [%{bot_id: get_bot_id()}]}
+      }
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

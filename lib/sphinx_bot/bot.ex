@@ -7,8 +7,6 @@ defmodule SphinxBot.Bot do
 
   alias ExGram.Model
 
-  # @waiting_answer_duration 60 * 1000
-
   @bot :sphinx_bot
 
   use ExGram.Bot,
@@ -27,35 +25,36 @@ defmodule SphinxBot.Bot do
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
   def handle({:command, :time, _msg}, context) do
-    time = SphinxBot.RealBotLogic.handle(:time)
+    time = SphinxBot.RealBotLogic.time()
     answer(context, time, parse_mode: "MarkdownV2")
   end
 
   def handle({:command, :riddle, msg},context) do
     chat_user = extract_chat_user(msg)
-    SphinxBot.RealBotLogic.handle(:riddle, chat_user, riddle_sender(context))
+    SphinxBot.RealBotLogic.riddle(chat_user, riddle_sender(context))
   end
 
   def handle({:callback_query, callback_query}, _context) do
     chat_user = extract_chat_user(callback_query)
     data = extract_callback_data(callback_query)
-    SphinxBot.RealBotLogic.handle(:callback, chat_user, data)
+    SphinxBot.RealBotLogic.user_answer(chat_user, data)
   end
 
   def handle(
     {:message,
      %Model.Message{chat: chat, new_chat_members: new_users_list}},
     context) when is_list(new_users_list) do
-    Logger.info("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
+    # Logger.info("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
     Enum.each(
       new_users_list,
       fn user ->
-        SphinxBot.RealBotLogic.handle(:new_chat_member, {chat, user}, riddle_sender(context))  end)
+        SphinxBot.RealBotLogic.new_user({chat, user}, riddle_sender(context))
+      end)
   end
 
   def handle({:text, _ , msg}, _) do
-    cu = extract_chat_user(msg)
-    SphinxBot.RealBotLogic.handle(:text, cu)
+    extract_chat_user(msg)
+    |> SphinxBot.RealBotLogic.message()
   end
 
   #default handler
