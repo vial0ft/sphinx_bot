@@ -18,7 +18,7 @@ defmodule SphinxBot.Application do
 
 
   def get_bot_id() do
-    {bot_id, _} = Integer.parse(Application.fetch_env!(:sphinx, :bot_id))
+    {bot_id, _} = Integer.parse(Application.fetch_env!(:sphinx_bot, :bot_id))
     bot_id
   end
 
