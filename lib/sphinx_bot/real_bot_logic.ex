@@ -74,7 +74,7 @@ defmodule SphinxBot.RealBotLogic do
         |> Format.add_user(user)
         |> Format.add_sec_time_limit(60)
       msg_id = send_riddle_func.(ch_u, formatted_text,  opts)
-      pid = Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
+      {:ok, pid} = Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
       storage_key =
         riddle_store_key(ch_u)
         |> Riddles.Store.add({riddle, pid})
@@ -113,9 +113,9 @@ defmodule SphinxBot.RealBotLogic do
     case Riddles.Store.get(riddle_store_key(ch_u)) do
       {:ok, {riddle, pid}} ->
         right? = Riddles.Checker.check_answer(data, riddle)
-        send(pid, {:answer, right?})
+        SphinxBot.WaitingUserAnswer.user_answer(pid, right?)
       {:error, why} ->
-        Logger.error("ignore: #{why}")
+        Logger.error("ignore callback: #{why}")
         :ignore
     end
     {:noreply, state}

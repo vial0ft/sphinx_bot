@@ -29,25 +29,35 @@ defmodule SphinxBot.Background do
     GenServer.cast(__MODULE__, {:ban, {chat_id, user_id, revoke_messages}})
   end
 
-  @spec waiting_for_answer(integer(), {integer(), integer()}, integer()) :: pid()
-  def waiting_for_answer(msg_id, {chat_id, user_id}, duration) do
-  	spawn(fn ->
-      receive do
-      	{:answer, right?} ->
-          if !right? do
-            Logger.debug("#{chat_id} #{user_id} wrong")
-            ban_user(chat_id, user_id)
-          else
-            Logger.debug("#{chat_id} #{user_id} correct")
-          end
-      after
-        duration ->
-          ban_user(chat_id, user_id)
-          Logger.debug("timeout of waiting")
-      end
 
-      delete_message(chat_id, msg_id)
-    end)
+  @spec waiting_for_answer(
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer()
+        ) :: :ignore | {:error, any()} | {:ok, pid()}
+  def waiting_for_answer(msg_id, {chat_id, user_id}, duration) do
+    SphinxBot.WaitingUserAnswer.start_link(
+      %{riddle_msg_id: msg_id,
+        chat_id: chat_id,
+        user_id: user_id,
+        timeout: duration})
+  	# spawn(fn ->
+    #   receive do
+    #   	{:answer, right?} ->
+    #       if !right? do
+    #         Logger.debug("#{chat_id} #{user_id} wrong")
+    #         ban_user(chat_id, user_id)
+    #       else
+    #         Logger.debug("#{chat_id} #{user_id} correct")
+    #       end
+    #   after
+    #     duration ->
+    #       ban_user(chat_id, user_id)
+    #       Logger.debug("timeout of waiting")
+    #   end
+
+    #   delete_message(chat_id, msg_id)
+    # end)
   end
 
   @impl true
