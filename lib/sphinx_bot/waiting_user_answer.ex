@@ -10,12 +10,10 @@ defmodule SphinxBot.WaitingUserAnswer do
     GenServer.start_link(__MODULE__, default)
   end
 
-
   @spec user_answer(atom() | pid() | {atom(), any()} | {:via, atom(), any()}, boolean()) :: :ok
   def user_answer(pid, right_answer?) do
     GenServer.cast(pid, {:user_answer, right_answer?})
   end
-
 
   @impl true
   @spec init(%{:timeout => non_neg_integer(), optional(any()) => any()}) ::
@@ -24,7 +22,6 @@ defmodule SphinxBot.WaitingUserAnswer do
     timer(timeout)
     {:ok, initial_state}
   end
-
 
   @impl true
   def handle_cast(

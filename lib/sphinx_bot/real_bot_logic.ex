@@ -34,6 +34,10 @@ defmodule SphinxBot.RealBotLogic do
     GenServer.call(__MODULE__, {:new_chat_member,chat_user, send_riddle_func})
   end
 
+  def left_user(chat_user) do
+    GenServer.cast(__MODULE__, {:left_chat_member, chat_user})
+  end
+
   @spec user_answer(chat_user, any()) :: any()
   def user_answer(chat_user, data) do
     GenServer.cast(__MODULE__, {:callback, chat_user, data})
@@ -91,9 +95,16 @@ defmodule SphinxBot.RealBotLogic do
 
     if user_id != bot_id do
       handle_call({:riddle, chat_user, send_riddle_func}, from, state)
+      Infra.VisitLogger.log({:new_user, chat_user})
     else
       {:reply, :ignore, state}
     end
+  end
+
+  @impl true
+  def handle_cast({:left_chat_member, chat_user}, state) do
+    Infra.VisitLogger.log({:left, chat_user})
+    {:noreply, state}
   end
 
 
