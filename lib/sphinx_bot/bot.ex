@@ -5,6 +5,7 @@ defmodule SphinxBot.Bot do
   require Logger
   require ExGram.Dsl.Keyboard
 
+  alias SphinxBot.RealBotLogic
   alias ExGram.Model
 
   @bot :sphinx_bot
@@ -16,6 +17,7 @@ defmodule SphinxBot.Bot do
   command("start")
   command("time")
   command("riddle")
+  command("health", description: "Some of system info")
   command("help", description: "Print the bot's help")
 
   middleware(ExGram.Middleware.IgnoreUsername)
@@ -24,37 +26,53 @@ defmodule SphinxBot.Bot do
 
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
+  def handle({:command, :health, msg}, context) do
+    {ch, u} = extract_chat_user(msg)
+    Logger.debug(u)
+    with {:ok, m} <- ExGram.get_chat_member(ch.id, u.id) do
+      case m.status do
+        "creator" -> answer(context, to_string(health()))
+      end
+    end
+  end
+
   def handle({:command, :time, _msg}, context) do
-    time = SphinxBot.RealBotLogic.time()
+    time = RealBotLogic.time()
     answer(context, time, parse_mode: "MarkdownV2")
   end
 
   def handle({:command, :riddle, msg},context) do
     chat_user = extract_chat_user(msg)
-    SphinxBot.RealBotLogic.riddle(chat_user, riddle_sender(context))
+    RealBotLogic.riddle(chat_user, riddle_sender(context))
   end
 
   def handle({:callback_query, callback_query}, _context) do
     chat_user = extract_chat_user(callback_query)
     data = extract_callback_data(callback_query)
-    SphinxBot.RealBotLogic.user_answer(chat_user, data)
+    RealBotLogic.user_answer(chat_user, data)
   end
 
   def handle(
     {:message,
      %Model.Message{chat: chat, new_chat_members: new_users_list}},
     context) when is_list(new_users_list) do
-    # Logger.info("#{inspect(chat, pretty: true)} new: #{inspect(new_users_list, pretty: true)}")
     Enum.each(
       new_users_list,
       fn user ->
-        SphinxBot.RealBotLogic.new_user({chat, user}, riddle_sender(context))
+        RealBotLogic.new_user({chat, user}, riddle_sender(context))
       end)
+  end
+
+  def handle(
+    {:message,
+     %Model.Message{chat: chat, left_chat_member: left_user}},
+    _context) when not is_nil(left_user) do
+    RealBotLogic.left_user({chat, left_user})
   end
 
   def handle({:text, _ , msg}, _) do
     extract_chat_user(msg)
-    |> SphinxBot.RealBotLogic.message()
+    |> RealBotLogic.message()
   end
 
   #default handler
@@ -104,5 +122,10 @@ defmodule SphinxBot.Bot do
   @spec extract_response_msg_id(ExGram.Cnt.t()) :: integer()
   defp extract_response_msg_id(%ExGram.Cnt{responses: [ok: msg]}) do
     msg.message_id
+  end
+
+  defp health() do
+    :erlang.memory()
+    |> Enum.map_join("\n", fn {key, val} -> ~s{"#{key}": #{val}} end)
   end
 end

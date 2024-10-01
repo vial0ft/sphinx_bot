@@ -34,7 +34,8 @@ defmodule SphinxBot.Application do
       %{
         id: SphinxBot.RealBotLogic,
         start: {SphinxBot.RealBotLogic, :start_link, [%{bot_id: get_bot_id()}]}
-      }
+      },
+      {Infra.VisitLogger, %{log_dir: "log/"}}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
