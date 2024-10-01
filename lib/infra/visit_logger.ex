@@ -23,7 +23,7 @@ defmodule Infra.VisitLogger do
     now = DateTime.utc_now()
     log_file = log_filename(dir, now)
     with {:ok, f} <- File.open(log_file, [:append]) do
-      IO.binwrite(f,log_line(now, event, ch_u)) 
+      IO.binwrite(f,log_line(now, event, ch_u))
       File.close(f)
     end
     {:noreply, state}
@@ -53,6 +53,4 @@ defmodule Infra.VisitLogger do
     ], ", ")
     "{#{info}}"
   end
-
-
 end
