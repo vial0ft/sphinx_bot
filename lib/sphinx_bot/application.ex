@@ -27,7 +27,7 @@ defmodule SphinxBot.Application do
       {SphinxBot.Background, []},
       %{
         id: SphinxBot.RealBotLogic,
-        start: {SphinxBot.RealBotLogic, :start_link, [%{}]}
+        start: {SphinxBot.RealBotLogic, :start_link, [%{timeout: 60 * 1000}]}
       },
       {Infra.VisitLogger, %{log_dir: "log/"}}
     ]

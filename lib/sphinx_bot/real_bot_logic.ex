@@ -2,7 +2,6 @@ defmodule SphinxBot.RealBotLogic do
 	@behaviour GenServer
 
   require Logger
-  @waiting_answer_duration 60 * 1000
 
   alias ExGram.Model
   alias SphinxBot.Format
@@ -73,12 +72,15 @@ defmodule SphinxBot.RealBotLogic do
   @spec handle_call({:riddle, chat_user, send_func}, any(), map()) :: {:reply, any(), map()}
   def handle_call({:riddle, {chat, user} = ch_u , send_riddle_func}, _from, state) do
       %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
+
       formatted_text =
         text
         |> Format.add_user(user)
-        |> Format.add_sec_time_limit(60)
+        |> Format.add_sec_time_limit(div(state.timeout,1000))
+
       msg_id = send_riddle_func.(ch_u, formatted_text,  opts)
-      {:ok, pid} = Background.waiting_for_answer(msg_id, {chat.id, user.id}, @waiting_answer_duration)
+      {:ok, pid} = Background.waiting_for_answer(msg_id, {chat.id, user.id}, state)
+
       storage_key =
         riddle_store_key(ch_u)
         |> Riddles.Store.add({riddle, pid})
