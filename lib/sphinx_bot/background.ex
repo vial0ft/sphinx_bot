@@ -1,5 +1,4 @@
 defmodule SphinxBot.Background do
-
   @moduledoc """
   Delete Messages, ban users
   """
@@ -29,51 +28,29 @@ defmodule SphinxBot.Background do
     GenServer.cast(__MODULE__, {:ban, {chat_id, user_id, revoke_messages}})
   end
 
-
   @spec waiting_for_answer(
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()},
-          non_neg_integer()
+          map()
         ) :: :ignore | {:error, any()} | {:ok, pid()}
-  def waiting_for_answer(msg_id, {chat_id, user_id}, duration) do
-    SphinxBot.WaitingUserAnswer.start_link(
-      %{riddle_msg_id: msg_id,
-        chat_id: chat_id,
-        user_id: user_id,
-        timeout: duration})
-  	# spawn(fn ->
-    #   receive do
-    #   	{:answer, right?} ->
-    #       if !right? do
-    #         Logger.debug("#{chat_id} #{user_id} wrong")
-    #         ban_user(chat_id, user_id)
-    #       else
-    #         Logger.debug("#{chat_id} #{user_id} correct")
-    #       end
-    #   after
-    #     duration ->
-    #       ban_user(chat_id, user_id)
-    #       Logger.debug("timeout of waiting")
-    #   end
-
-    #   delete_message(chat_id, msg_id)
-    # end)
+  def waiting_for_answer(msg_id, {chat_id, user_id}, opts \\ %{}) do
+    %{riddle_msg_id: msg_id, chat_id: chat_id, user_id: user_id}
+    |> Map.merge(Map.take(opts, [:timeout]))
+    |> SphinxBot.WaitingUserAnswer.start_link()
   end
 
   @impl true
-  @spec handle_cast({:delete_msgs, {integer(),list(integer())}}, any()) :: {:noreply, any()}
+  @spec handle_cast({:delete_msgs, {integer(), list(integer())}}, any()) :: {:noreply, any()}
   def handle_cast({:delete_msgs, {chat_id, msg_ids}}, state) do
-  	ExGram.delete_messages(chat_id, msg_ids)
+    ExGram.delete_messages(chat_id, msg_ids)
     {:noreply, state}
   end
 
   @impl true
   @spec handle_cast({:ban, {integer(), integer(), boolean()}}, any()) :: {:noreply, any()}
   def handle_cast({:ban, {chat_id, user_id, revoke_messages}}, state) do
-  	Logger.info("chat_id #{chat_id}, ban #{user_id}")
+    Logger.info("chat_id #{chat_id}, ban #{user_id}")
     ExGram.ban_chat_member(chat_id, user_id, revoke_messages: revoke_messages)
     {:noreply, state}
   end
-
-
 end

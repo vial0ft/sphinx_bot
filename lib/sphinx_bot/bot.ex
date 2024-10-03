@@ -26,9 +26,11 @@ defmodule SphinxBot.Bot do
 
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
+
   def handle({:command, :health, msg}, context) do
     {ch, u} = extract_chat_user(msg)
     Logger.debug(u)
+
     with {:ok, m} <- ExGram.get_chat_member(ch.id, u.id) do
       case m.status do
         "creator" -> answer(context, to_string(health()))
@@ -41,7 +43,7 @@ defmodule SphinxBot.Bot do
     answer(context, time, parse_mode: "MarkdownV2")
   end
 
-  def handle({:command, :riddle, msg},context) do
+  def handle({:command, :riddle, msg}, context) do
     chat_user = extract_chat_user(msg)
     RealBotLogic.riddle(chat_user, riddle_sender(context))
   end
@@ -53,49 +55,51 @@ defmodule SphinxBot.Bot do
   end
 
   def handle(
-    {:message,
-     %Model.Message{chat: chat, new_chat_members: new_users_list}},
-    context) when is_list(new_users_list) do
+        {:message, %Model.Message{chat: chat, new_chat_members: new_users_list}},
+        context
+      )
+      when is_list(new_users_list) do
     Enum.each(
       new_users_list,
       fn user ->
         if user.id != context.bot_info.id do
           RealBotLogic.new_user({chat, user}, riddle_sender(context))
         end
-      end)
+      end
+    )
   end
 
   def handle(
-    {:message,
-     %Model.Message{chat: chat, left_chat_member: left_user}},
-    context) when not is_nil(left_user) do
+        {:message, %Model.Message{chat: chat, left_chat_member: left_user}},
+        context
+      )
+      when not is_nil(left_user) do
     if left_user.id != context.bot_info.id do
       RealBotLogic.left_user({chat, left_user})
     end
   end
 
-  def handle({:text, _ , msg}, _cnt) do
+  def handle({:text, _, msg}, _cnt) do
     extract_chat_user(msg)
     |> RealBotLogic.message()
   end
 
-  #default handler
+  # default handler
   def handle(msg, cnt) do
     Logger.info("ctx" <> inspect(cnt, pretty: true))
     Logger.info("Unknown message " <> inspect(msg, pretty: true))
   end
 
-
   defp riddle_sender(ctx) do
     fn _ch_u, text, opts ->
-        answer(
-          ctx,
-          text,
-          parse_mode: "MarkdownV2",
-          reply_markup: prepare_opts(opts)
-        )
-        |> send_answers
-        |> extract_response_msg_id
+      answer(
+        ctx,
+        text,
+        parse_mode: "MarkdownV2",
+        reply_markup: prepare_opts(opts)
+      )
+      |> send_answers
+      |> extract_response_msg_id
     end
   end
 
@@ -107,8 +111,8 @@ defmodule SphinxBot.Bot do
     |> create_inline
   end
 
-  defp as_list({f,s}) do
-    [f,s]
+  defp as_list({f, s}) do
+    [f, s]
   end
 
   defp riddle_opt_2_btn(%{text: text, right?: right?}) do
@@ -117,8 +121,8 @@ defmodule SphinxBot.Bot do
 
   defp extract_chat_user(some_request) do
     with {:ok, chat} <- extract_chat(some_request),
-         {:ok, user} <- extract_user(some_request)  do
-    	{chat, user}
+         {:ok, user} <- extract_user(some_request) do
+      {chat, user}
     end
   end
 

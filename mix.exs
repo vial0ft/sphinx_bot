@@ -27,7 +27,7 @@ defmodule SphinxBot.MixProject do
       {:ex_gram, "~> 0.53"},
       {:tesla, "~> 1.2"},
       {:jason, ">= 1.0.0"},
-      {:hackney, "~> 1.12"},
+      {:hackney, "~> 1.12"}
     ]
   end
 end

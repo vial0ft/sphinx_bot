@@ -14,7 +14,7 @@ defmodule Riddles.StoreTest do
   end
 
   @tag :slow
-  test ("getting expired riddle (1 min expiration)") do
+  test "getting expired riddle (1 min expiration)" do
     {:ok, key} = Store.add("riddle", {:riddle, self()})
     assert Store.get(key) == {:ok, {:riddle, self()}}
     Process.sleep(65 * 1000)
@@ -23,7 +23,7 @@ defmodule Riddles.StoreTest do
 
   @tag :slow
   @tag timeout: 5 * 70 * 1000
-  test ("getting cleaned up riddle (5 min before clean up)") do
+  test "getting cleaned up riddle (5 min before clean up)" do
     {:ok, key} = Store.add("riddle", {:riddle, self()})
     assert Store.get(key) == {:ok, {:riddle, self()}}
     Process.sleep(5 * 65 * 1000)

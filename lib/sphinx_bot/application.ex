@@ -8,17 +8,15 @@ defmodule SphinxBot.Application do
   @spec init_riddle_data() :: map()
   def init_riddle_data do
     with {:ok, symbols_str} <- File.read("resources/clock_symbols.json"),
-         {:ok, symbols} <- Jason.decode(symbols_str)
-      do
+         {:ok, symbols} <- Jason.decode(symbols_str) do
       symbols
-      else
-        err -> raise err
-      end
+    else
+      err -> raise err
+    end
   end
 
   @impl true
   def start(_type, _args) do
-
     children = [
       ExGram,
       {SphinxBot.Bot, [method: :polling, token: Application.fetch_env!(:ex_gram, :token)]},
@@ -27,7 +25,7 @@ defmodule SphinxBot.Application do
       {SphinxBot.Background, []},
       %{
         id: SphinxBot.RealBotLogic,
-        start: {SphinxBot.RealBotLogic, :start_link, [%{}]}
+        start: {SphinxBot.RealBotLogic, :start_link, [%{timeout: 60 * 1000}]}
       },
       {Infra.VisitLogger, %{log_dir: "log/"}}
     ]
