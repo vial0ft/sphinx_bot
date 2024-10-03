@@ -88,17 +88,9 @@ defmodule SphinxBot.RealBotLogic do
 
   @impl true
   @spec handle_call({:new_chat_member, chat_user, send_func}, any(), map()) :: {:reply, :ignore, map()} | {:reply, any(), map()}
-  def handle_call(
-    {:new_chat_member,{_, %ExGram.Model.User{id: user_id}}=chat_user, send_riddle_func},
-    from,
-    %{bot_id: bot_id} = state) do
-
-    if user_id != bot_id do
-      handle_call({:riddle, chat_user, send_riddle_func}, from, state)
-      Infra.VisitLogger.log({:new_user, chat_user})
-    else
-      {:reply, :ignore, state}
-    end
+  def handle_call({:new_chat_member,chat_user, send_riddle_func}, from, state) do
+    Infra.VisitLogger.log({:new_user, chat_user})
+    handle_call({:riddle, chat_user, send_riddle_func}, from, state)
   end
 
   @impl true

@@ -59,24 +59,31 @@ defmodule SphinxBot.Bot do
     Enum.each(
       new_users_list,
       fn user ->
-        RealBotLogic.new_user({chat, user}, riddle_sender(context))
+        if user.id != context.bot_info.id do
+          RealBotLogic.new_user({chat, user}, riddle_sender(context))
+        end
       end)
   end
 
   def handle(
     {:message,
      %Model.Message{chat: chat, left_chat_member: left_user}},
-    _context) when not is_nil(left_user) do
-    RealBotLogic.left_user({chat, left_user})
+    context) when not is_nil(left_user) do
+    if left_user.id != context.bot_info.id do
+      RealBotLogic.left_user({chat, left_user})
+    end
   end
 
-  def handle({:text, _ , msg}, _) do
+  def handle({:text, _ , msg}, _cnt) do
     extract_chat_user(msg)
     |> RealBotLogic.message()
   end
 
   #default handler
-  def handle(msg, _cnt), do: Logger.info("Unknown message " <> inspect(msg, pretty: true))
+  def handle(msg, cnt) do
+    Logger.info("ctx" <> inspect(cnt, pretty: true))
+    Logger.info("Unknown message " <> inspect(msg, pretty: true))
+  end
 
 
   defp riddle_sender(ctx) do
