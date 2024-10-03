@@ -1,5 +1,4 @@
 defmodule Riddles.Clock.Riddle do
-
   alias Riddles.Clock.Format
   alias Riddles.Clock.RiddleMessage
 
@@ -36,23 +35,24 @@ defmodule Riddles.Clock.Riddle do
     riddle_time = Time.utc_now() |> Time.add(Enum.random(-59..59), :minute)
     additional_minutes = Enum.random(-59..59)
     answer = Time.add(riddle_time, additional_minutes, :minute)
+
     riddle_opts =
       [%{time: answer, right?: true} | gen_riddle_fake_opts(3)]
       |> Enum.map(&riddle_opt_format/1)
-      |> Enum.shuffle
+      |> Enum.shuffle()
+
     {:reply,
      %{
        type: :clock,
        answer: answer,
-       text:  RiddleMessage.riddle_text(riddle_time, additional_minutes, symbols),
+       text: RiddleMessage.riddle_text(riddle_time, additional_minutes, symbols),
        opts: riddle_opts
-     },
-     symbols}
+     }, symbols}
   end
 
   defp gen_riddle_fake_opts(n) do
     fake = for _ <- 1..n, do: gen_riddle_time_opt()
-    Enum.map(fake, fn fake_answer -> %{time: fake_answer, right?: false}  end)
+    Enum.map(fake, fn fake_answer -> %{time: fake_answer, right?: false} end)
   end
 
   defp riddle_opt_format(%{time: time, right?: right?}) do
@@ -60,10 +60,7 @@ defmodule Riddles.Clock.Riddle do
   end
 
   defp gen_riddle_time_opt do
-    {:ok, time } = Time.new(Enum.random(0..23), Enum.random(0..59),0)
+    {:ok, time} = Time.new(Enum.random(0..23), Enum.random(0..59), 0)
     time
   end
-
-
-
 end

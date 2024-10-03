@@ -2,7 +2,7 @@ defmodule Riddles.Store do
   @moduledoc """
   Riddle storage
   """
-require Logger
+  require Logger
 
   @default_ttl_sec 60
   @clean_up_period 5 * 60 * 1000
@@ -21,7 +21,6 @@ require Logger
     GenServer.call(__MODULE__, {:get, key})
   end
 
-
   # Server
 
   @impl true
@@ -33,22 +32,24 @@ require Logger
 
   @impl true
   def handle_call({:add, key, riddle_and_pid}, from, state) do
-    handle_call({:add, key, riddle_and_pid, @default_ttl_sec}, from , state)
+    handle_call({:add, key, riddle_and_pid, @default_ttl_sec}, from, state)
   end
 
   @impl true
   def handle_call({:add, key, riddle_and_pid, ttl}, _from, %{:table => table} = state) do
-  	:ets.insert(table, {key, riddle_and_pid, :os.system_time(:seconds) + ttl})
+    :ets.insert(table, {key, riddle_and_pid, :os.system_time(:seconds) + ttl})
     {:reply, {:ok, key}, state}
   end
 
   @impl true
-  def handle_call({:get, key}, _from,  %{:table => table} = state) do
-    res = case :ets.lookup(table, key) do
-            [found] -> check_expiration(found)
-            [] -> {:error, "Not found"}
-          end
-    {:reply, res , state}
+  def handle_call({:get, key}, _from, %{:table => table} = state) do
+    res =
+      case :ets.lookup(table, key) do
+        [found] -> check_expiration(found)
+        [] -> {:error, "Not found"}
+      end
+
+    {:reply, res, state}
   end
 
   defp check_expiration({_, {_riddle, pid} = riddle_value}) do
@@ -56,7 +57,7 @@ require Logger
       !Process.alive?(pid) -> {:error, "Process isn't alive"}
       :else -> {:ok, riddle_value}
     end
-  end 
+  end
 
   defp check_expiration({_, {_riddle, pid} = riddle_value, expiration}) do
     cond do
@@ -77,17 +78,18 @@ require Logger
   end
 
   defp ms4moment(moment) do
-    [{
-      {:"$1", :"$2",:"$3"},
-      [
-        {:>=, {:const, moment}, :"$3"}
-      ],
-      [true],
-      }]
+    [
+      {
+        {:"$1", :"$2", :"$3"},
+        [
+          {:>=, {:const, moment}, :"$3"}
+        ],
+        [true]
+      }
+    ]
   end
 
   defp schedule_clean() do
     Process.send_after(self(), :clean, @clean_up_period)
   end
 end
-

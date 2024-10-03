@@ -1,6 +1,6 @@
 defmodule SphinxBot.RealBotLogicTest do
- alias Riddles.Store
-	alias SphinxBot.RealBotLogic
+  alias Riddles.Store
+  alias SphinxBot.RealBotLogic
   alias ExGram.Model
   use ExUnit.Case
   doctest SphinxBot.RealBotLogic
@@ -15,7 +15,7 @@ defmodule SphinxBot.RealBotLogicTest do
     responce_msg_id = 100
     ch_u = {chat, user}
     key = RealBotLogic.riddle_store_key(ch_u)
-  	assert RealBotLogic.riddle(ch_u, mock_sender(responce_msg_id)) == {:ok, key}
+    assert RealBotLogic.riddle(ch_u, mock_sender(responce_msg_id)) == {:ok, key}
 
     assert {:ok, {riddle, riddle_pid}} = Store.get(key)
     assert riddle != nil
