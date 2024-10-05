@@ -19,6 +19,7 @@ defmodule SphinxBot.Bot do
   command("riddle")
   command("health", description: "Some of system info")
   command("help", description: "Print the bot's help")
+ 
 
   middleware(ExGram.Middleware.IgnoreUsername)
 
@@ -26,7 +27,6 @@ defmodule SphinxBot.Bot do
 
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
-
   def handle({:command, :health, msg}, context) do
     {ch, u} = extract_chat_user(msg)
     Logger.debug(u)
@@ -34,6 +34,8 @@ defmodule SphinxBot.Bot do
     with {:ok, m} <- ExGram.get_chat_member(ch.id, u.id) do
       case m.status do
         "creator" -> answer(context, to_string(health()))
+        "administrator" -> answer(context, to_string(health()))
+        _ -> :ignore
       end
     end
   end
@@ -74,14 +76,13 @@ defmodule SphinxBot.Bot do
         context
       )
       when not is_nil(left_user) do
-    if left_user.id != context.bot_info.id do
-      RealBotLogic.left_user({chat, left_user})
-    end
+    if left_user.id != context.bot_info.id, do: RealBotLogic.left_user({chat, left_user})
   end
 
   def handle({:text, _, msg}, _cnt) do
-    extract_chat_user(msg)
-    |> RealBotLogic.message()
+    {ch, u} = ch_u = extract_chat_user(msg)
+    Logger.debug(ExGram.get_chat_member(ch.id, u.id))
+    RealBotLogic.message(ch_u)
   end
 
   # default handler

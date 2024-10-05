@@ -70,6 +70,7 @@ defmodule SphinxBot.RealBotLogic do
   @impl true
   @spec handle_call({:riddle, chat_user, send_func}, any(), map()) :: {:reply, any(), map()}
   def handle_call({:riddle, {chat, user} = ch_u, send_riddle_func}, _from, state) do
+
     %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
 
     formatted_text =
@@ -80,10 +81,7 @@ defmodule SphinxBot.RealBotLogic do
     msg_id = send_riddle_func.(ch_u, formatted_text, opts)
     {:ok, pid} = Background.waiting_for_answer(msg_id, {chat.id, user.id}, state)
 
-    storage_key =
-      riddle_store_key(ch_u)
-      |> Riddles.Store.add({riddle, pid})
-
+    storage_key = riddle_store_key(ch_u) |> Riddles.Store.add({riddle, pid})
     {:reply, storage_key, state}
   end
 
@@ -98,6 +96,12 @@ defmodule SphinxBot.RealBotLogic do
   @impl true
   def handle_cast({:left_chat_member, chat_user}, state) do
     Infra.VisitLogger.log({:left, chat_user})
+
+    case Riddles.Store.get(riddle_store_key(chat_user)) do
+      {:ok, {_, pid}} -> SphinxBot.WaitingUserAnswer.stop_waiting(pid)
+      _ -> :do_nothing
+    end
+
     {:noreply, state}
   end
 
@@ -105,7 +109,9 @@ defmodule SphinxBot.RealBotLogic do
   @spec handle_cast({:text, chat_user}, map()) :: {:noreply, map()}
   def handle_cast({:text, {chat, user} = chat_user}, state) do
     case Riddles.Store.get(riddle_store_key(chat_user)) do
-      {:ok, _} -> SphinxBot.Background.ban_user(chat.id, user.id)
+      {:ok, {_, pid}} ->
+        SphinxBot.WaitingUserAnswer.stop_waiting(pid)
+        SphinxBot.Background.ban_user(chat.id, user.id)
       _ -> :do_nothing
     end
 
