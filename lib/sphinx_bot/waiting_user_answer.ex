@@ -16,6 +16,11 @@ defmodule SphinxBot.WaitingUserAnswer do
     GenServer.cast(pid, {:user_answer, right_answer?})
   end
 
+  @spec stop_waiting(atom() | pid() | {atom(), any()} | {:via, atom(), any()}) :: :ok
+  def stop_waiting(pid) do
+    if Process.alive?(pid), do: GenServer.cast(pid, :stop_waiting), else: :ok
+  end
+
   @impl true
   @spec init(%{:timeout => non_neg_integer(), optional(any()) => any()}) ::
           {:ok, %{:timeout => non_neg_integer(), optional(any()) => any()}}
@@ -29,10 +34,14 @@ defmodule SphinxBot.WaitingUserAnswer do
         {:user_answer, right_answer?},
         %{user_id: user_id, chat_id: chat_id, riddle_msg_id: msg_id} = state
       ) do
-    if not right_answer? do
-      SphinxBot.Background.ban_user(chat_id, user_id)
-    end
+    if not right_answer?, do: SphinxBot.Background.ban_user(chat_id, user_id)
 
+    SphinxBot.Background.delete_message(chat_id, msg_id)
+    {:stop, :normal, state}
+  end
+
+  @impl true
+  def handle_cast(:stop_waiting, %{chat_id: chat_id, riddle_msg_id: msg_id} = state) do
     SphinxBot.Background.delete_message(chat_id, msg_id)
     {:stop, :normal, state}
   end
