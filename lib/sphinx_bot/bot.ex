@@ -5,6 +5,7 @@ defmodule SphinxBot.Bot do
   require Logger
   require ExGram.Dsl.Keyboard
 
+  alias SphinxBot.ConfigManager
   alias SphinxBot.RealBotLogic
   alias ExGram.Model
 
@@ -19,7 +20,8 @@ defmodule SphinxBot.Bot do
   command("riddle")
   command("health", description: "Some of system info")
   command("help", description: "Print the bot's help")
- 
+  command("halt")
+  command("config")
 
   middleware(ExGram.Middleware.IgnoreUsername)
 
@@ -27,16 +29,40 @@ defmodule SphinxBot.Bot do
 
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
+
   def handle({:command, :health, msg}, context) do
     {ch, u} = extract_chat_user(msg)
-    Logger.debug(u)
 
-    with {:ok, m} <- ExGram.get_chat_member(ch.id, u.id) do
-      case m.status do
-        "creator" -> answer(context, to_string(health()))
-        "administrator" -> answer(context, to_string(health()))
-        _ -> :ignore
-      end
+    if is_user_admin(ch, u) do
+      answer(context, to_string(health()))
+    end
+  end
+
+  def handle({:command, :halt, msg}, _ctx) do
+    Logger.debug("halt call")
+    {ch, u} = extract_chat_user(msg)
+
+    with {:ok, status} <- user_status(ch, u),
+         {:ok, halted} <- change_halt({ch.id, status}) do
+      msg = if halted, do: "💤", else: "⏰"
+      if halted, do: RealBotLogic.pause(ch.id)
+      ExGram.send_message(ch.id, msg)
+    else
+      err -> Logger.debug(inspect(err))
+    end
+  end
+
+  def handle({:command, :config, msg}, _ctx) do
+    {ch, u} = extract_chat_user(msg)
+
+    with {:ok, status} <- user_status(ch, u) do
+      config =
+        ConfigManager.get_current_state({ch.id, status})
+        |> Enum.map_join("\n", fn {key, val} -> "'#{key}' : '#{val}'" end)
+
+      ExGram.send_message(ch.id, "{\n#{config}\n}")
+    else
+      err -> Logger.debug(err)
     end
   end
 
@@ -80,15 +106,33 @@ defmodule SphinxBot.Bot do
   end
 
   def handle({:text, _, msg}, _cnt) do
+    Logger.debug("msg: #{inspect(msg)}")
     {ch, u} = ch_u = extract_chat_user(msg)
-    Logger.debug(ExGram.get_chat_member(ch.id, u.id))
+
+    case ExGram.get_chat_member(ch.id, u.id) do
+      {:ok, member} ->
+        Logger.debug(inspect(member, pretty: true))
+        RealBotLogic.message(ch_u)
+
+      _ ->
+        :ignore
+    end
+
+    Logger.debug(inspect(ExGram.get_chat_member(ch.id, u.id)))
     RealBotLogic.message(ch_u)
   end
 
   # default handler
-  def handle(msg, cnt) do
-    Logger.info("ctx" <> inspect(cnt, pretty: true))
+  def handle(msg, _cnt) do
+    # Logger.info("ctx" <> inspect(cnt, pretty: true))
     Logger.info("Unknown message " <> inspect(msg, pretty: true))
+  end
+
+  defp change_halt(ch_us) do
+    case ConfigManager.change_state("halt", ch_us) do
+      :ignore -> {:error, :ignore}
+      halted -> {:ok, halted}
+    end
   end
 
   defp riddle_sender(ctx) do
@@ -134,6 +178,22 @@ defmodule SphinxBot.Bot do
   @spec extract_response_msg_id(ExGram.Cnt.t()) :: integer()
   defp extract_response_msg_id(%ExGram.Cnt{responses: [ok: msg]}) do
     msg.message_id
+  end
+
+  defp user_status(ch, u) do
+    with {:ok, m} <- ExGram.get_chat_member(ch.id, u.id) do
+      {:ok, m.status}
+    else
+      _ -> {:error, "Cant get status of user_id #{inspect(u)} in chat #{inspect(ch)}"}
+    end
+  end
+
+  defp is_user_admin(ch, u) do
+    case user_status(ch, u) do
+      {:ok, "creator"} -> true
+      {:ok, "administrator"} -> true
+      _ -> false
+    end
   end
 
   defp health() do
