@@ -19,13 +19,16 @@ defmodule SphinxBot.Application do
   def start(_type, _args) do
     children = [
       ExGram,
-      {SphinxBot.Bot, [method: :polling, token: Application.fetch_env!(:ex_gram, :token)]},
+      {SphinxBot.Bot, [method: {:polling, allowed_updates: ["message"]},
+                       token: Application.fetch_env!(:ex_gram, :token)]},
       {Riddles.Clock.Riddle, init_riddle_data()},
       {Riddles.Store, :riddles},
       {SphinxBot.Background, []},
+      {SphinxBot.ConfigManager, %{}},
       %{
         id: SphinxBot.RealBotLogic,
-        start: {SphinxBot.RealBotLogic, :start_link, [%{timeout: 60 * 1000}]}
+        start: {SphinxBot.RealBotLogic, :start_link, [%{timeout: 60 * 1000,
+                                                        pause: false}]}
       },
       {Infra.VisitLogger, %{log_dir: "log/"}}
     ]

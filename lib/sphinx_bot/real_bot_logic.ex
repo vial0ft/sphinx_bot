@@ -1,5 +1,5 @@
 defmodule SphinxBot.RealBotLogic do
-  @behaviour GenServer
+  use GenServer
 
   require Logger
 
@@ -27,6 +27,10 @@ defmodule SphinxBot.RealBotLogic do
     GenServer.call(__MODULE__, {:riddle, ch_u, send_riddle_func})
   end
 
+  def pause(chat_id) do
+    GenServer.cast(__MODULE__, {:pause, chat_id})
+  end
+
   @spec new_user(chat_user, send_func) :: any()
   def new_user(chat_user, send_riddle_func) do
     GenServer.call(__MODULE__, {:new_chat_member, chat_user, send_riddle_func})
@@ -51,7 +55,7 @@ defmodule SphinxBot.RealBotLogic do
   @impl true
   @spec init(any()) :: {:ok, any()}
   def init(state) do
-    {:ok, state}
+    {:ok, Map.put(state,:paused, MapSet.new())}
   end
 
   @impl true
@@ -70,33 +74,39 @@ defmodule SphinxBot.RealBotLogic do
   @impl true
   @spec handle_call({:riddle, chat_user, send_func}, any(), map()) :: {:reply, any(), map()}
   def handle_call({:riddle, {chat, user} = ch_u, send_riddle_func}, _from, state) do
+    if is_chat_paused(chat.id, state) do
+      {:reply, :ignore, state}
+    else
+      %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
 
-    %{text: text, opts: opts} = riddle = Riddles.Generator.generate_riddle()
+      formatted_text =
+        text
+        |> Format.add_user(user)
+        |> Format.add_sec_time_limit(div(state.timeout, 1000))
 
-    formatted_text =
-      text
-      |> Format.add_user(user)
-      |> Format.add_sec_time_limit(div(state.timeout, 1000))
+      msg_id = send_riddle_func.(ch_u, formatted_text, opts)
+      {:ok, pid} = Background.waiting_for_answer(msg_id, {chat.id, user.id}, state)
 
-    msg_id = send_riddle_func.(ch_u, formatted_text, opts)
-    {:ok, pid} = Background.waiting_for_answer(msg_id, {chat.id, user.id}, state)
-
-    storage_key = riddle_store_key(ch_u) |> Riddles.Store.add({riddle, pid})
-    {:reply, storage_key, state}
+      storage_key = riddle_store_key(ch_u) |> Riddles.Store.add({riddle, pid})
+      {:reply, storage_key, state}
+    end
   end
 
   @impl true
   @spec handle_call({:new_chat_member, chat_user, send_func}, any(), map()) ::
-          {:reply, :ignore, map()} | {:reply, any(), map()}
-  def handle_call({:new_chat_member, chat_user, send_riddle_func}, from, state) do
+  {:reply, :ignore, map()} | {:reply, any(), map()}
+  def handle_call({:new_chat_member, {chat, _} = chat_user, send_riddle_func}, from,state) do
     Infra.VisitLogger.log({:new_user, chat_user})
-    handle_call({:riddle, chat_user, send_riddle_func}, from, state)
+    if is_chat_paused(chat.id, state) do
+      {:reply, :ignore, state}
+    else
+   	  handle_call({:riddle, chat_user, send_riddle_func}, from, state)
+    end
   end
 
   @impl true
   def handle_cast({:left_chat_member, chat_user}, state) do
     Infra.VisitLogger.log({:left, chat_user})
-
     case Riddles.Store.get(riddle_store_key(chat_user)) do
       {:ok, {_, pid}} -> SphinxBot.WaitingUserAnswer.stop_waiting(pid)
       _ -> :do_nothing
@@ -132,6 +142,21 @@ defmodule SphinxBot.RealBotLogic do
     end
 
     {:noreply, state}
+  end
+
+  def handle_cast({:pause, chat_id}, %{paused: chat_ids}=state) do
+    new_chat_ids =
+    if is_chat_paused(chat_id, state) do
+      MapSet.delete(chat_id, chat_id)
+    else
+      MapSet.put(chat_ids, chat_id)
+    end
+    {:noreply, %{state | paused: new_chat_ids}}
+  end
+
+
+  defp is_chat_paused(chat_id, %{paused: chat_ids}) do
+    MapSet.member?(chat_ids, chat_id)
   end
 
   @spec riddle_store_key({Model.Chat.t(), Model.User.t()}) :: bitstring()
