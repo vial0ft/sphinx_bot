@@ -29,19 +29,22 @@ defmodule SphinxBot.Bot do
 
   def handle({:command, :start, _msg}, context), do: answer(context, "Hi!")
   def handle({:command, :help, _msg}, context), do: answer(context, "Here is your help:")
+
   def handle({:command, :health, msg}, context) do
     {ch, u} = extract_chat_user(msg)
+
     if is_user_admin(ch, u) do
       answer(context, to_string(health()))
     end
   end
 
-  def handle({:command , :halt, msg}, _ctx) do
+  def handle({:command, :halt, msg}, _ctx) do
     Logger.debug("halt call")
     {ch, u} = extract_chat_user(msg)
+
     with {:ok, status} <- user_status(ch, u),
          {:ok, halted} <- change_halt({ch.id, status}) do
-    	msg = if halted, do: "💤", else: "⏰"
+      msg = if halted, do: "💤", else: "⏰"
       if halted, do: RealBotLogic.pause(ch.id)
       ExGram.send_message(ch.id, msg)
     else
@@ -49,12 +52,14 @@ defmodule SphinxBot.Bot do
     end
   end
 
-  def handle({:command , :config, msg}, _ctx) do
-  	{ch, u} = extract_chat_user(msg)
-    with {:ok, status}  <- user_status(ch, u) do
+  def handle({:command, :config, msg}, _ctx) do
+    {ch, u} = extract_chat_user(msg)
+
+    with {:ok, status} <- user_status(ch, u) do
       config =
         ConfigManager.get_current_state({ch.id, status})
         |> Enum.map_join("\n", fn {key, val} -> "'#{key}' : '#{val}'" end)
+
       ExGram.send_message(ch.id, "{\n#{config}\n}")
     else
       err -> Logger.debug(err)
@@ -70,8 +75,6 @@ defmodule SphinxBot.Bot do
     chat_user = extract_chat_user(msg)
     RealBotLogic.riddle(chat_user, riddle_sender(context))
   end
-
-
 
   def handle({:callback_query, callback_query}, _context) do
     chat_user = extract_chat_user(callback_query)
@@ -103,16 +106,20 @@ defmodule SphinxBot.Bot do
   end
 
   def handle({:text, _, msg}, _cnt) do
-        Logger.debug("msg: #{inspect(msg)}")
-        {ch, u} = ch_u = extract_chat_user(msg)
-        case ExGram.get_chat_member(ch.id, u.id) do
-          {:ok, member} ->
-            Logger.debug(inspect(member, pretty: true))
-            RealBotLogic.message(ch_u)
-          _ -> :ignore
-        end
-        Logger.debug(inspect(ExGram.get_chat_member(ch.id, u.id)))
+    Logger.debug("msg: #{inspect(msg)}")
+    {ch, u} = ch_u = extract_chat_user(msg)
+
+    case ExGram.get_chat_member(ch.id, u.id) do
+      {:ok, member} ->
+        Logger.debug(inspect(member, pretty: true))
         RealBotLogic.message(ch_u)
+
+      _ ->
+        :ignore
+    end
+
+    Logger.debug(inspect(ExGram.get_chat_member(ch.id, u.id)))
+    RealBotLogic.message(ch_u)
   end
 
   # default handler
@@ -182,11 +189,11 @@ defmodule SphinxBot.Bot do
   end
 
   defp is_user_admin(ch, u) do
-      case user_status(ch, u) do
-        {:ok,"creator"} -> true
-        {:ok, "administrator"} -> true
-        _ -> false
-      end
+    case user_status(ch, u) do
+      {:ok, "creator"} -> true
+      {:ok, "administrator"} -> true
+      _ -> false
+    end
   end
 
   defp health() do

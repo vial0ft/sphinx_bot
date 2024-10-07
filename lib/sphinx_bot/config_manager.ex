@@ -16,7 +16,7 @@ defmodule SphinxBot.ConfigManager do
 
   @spec get_current_state(any()) :: any()
   def get_current_state({chat_id, user_status})
-  when is_admin_or_creator(user_status) do
+      when is_admin_or_creator(user_status) do
     GenServer.call(__MODULE__, {:get_config, chat_id})
   end
 
@@ -27,12 +27,12 @@ defmodule SphinxBot.ConfigManager do
   end
 
   def change_state(k_v, {chat_id, user_status})
-  when is_admin_or_creator(user_status) and is_tuple(k_v) do
+      when is_admin_or_creator(user_status) and is_tuple(k_v) do
     change_state_p(Tuple.to_list(k_v), chat_id)
   end
 
-  def change_state(k_v,{chat_id, user_status})
-  when is_admin_or_creator(user_status) do
+  def change_state(k_v, {chat_id, user_status})
+      when is_admin_or_creator(user_status) do
     change_state_p([k_v], chat_id)
   end
 
@@ -42,26 +42,27 @@ defmodule SphinxBot.ConfigManager do
   @spec init(map()) :: {:ok, any()}
   def init(init_config) do
     :ets.new(__MODULE__, [:set, :public, :named_table])
+
     Enum.each(
       init_config,
       fn {chat_id, config} ->
         :ets.insert_new(__MODULE__, {chat_id, ChatConfig.new(config)})
       end
     )
+
     {:ok, %{}}
   end
 
-
   @impl true
-  def handle_call({:get_config, chat_id},_from,state) do
-    config = get_or_create_config(chat_id) |> ChatConfig.as_map
+  def handle_call({:get_config, chat_id}, _from, state) do
+    config = get_or_create_config(chat_id) |> ChatConfig.as_map()
     {:reply, config, state}
   end
 
   @impl true
-  def handle_call({:change, k_v, chat_id},_from, state) do
+  def handle_call({:change, k_v, chat_id}, _from, state) do
     with config <- get_or_create_config(chat_id),
-         {:ok, value,  new_config} <- ChatConfig.update(config, k_v) do
+         {:ok, value, new_config} <- ChatConfig.update(config, k_v) do
       :ets.insert(__MODULE__, {chat_id, new_config})
       {:reply, value, state}
     else
@@ -71,25 +72,25 @@ defmodule SphinxBot.ConfigManager do
 
   @impl true
   def handle_call(_msg, _from, state) do
-  	{:reply, :ignore, state}
+    {:reply, :ignore, state}
   end
-
 
   defp get_or_create_config(chat_id) do
     :ets.lookup(__MODULE__, chat_id)
     |> Enum.at(0)
     |> case do
-         nil ->
-           cfg = ChatConfig.new()
-           :ets.insert(__MODULE__, {chat_id, cfg})
-           cfg
-         {_, config} -> config
-       end
+      nil ->
+        cfg = ChatConfig.new()
+        :ets.insert(__MODULE__, {chat_id, cfg})
+        cfg
+
+      {_, config} ->
+        config
+    end
   end
 
-
   defmodule ChatConfig do
-  	defstruct halt: false, riddle_duration: 60 * 1000
+    defstruct halt: false, riddle_duration: 60 * 1000
     @type t :: %ChatConfig{halt: boolean(), riddle_duration: pos_integer()}
 
     defguardp is_positive_integer(n) when is_integer(n) and n > 0
@@ -99,18 +100,17 @@ defmodule SphinxBot.ConfigManager do
     @spec new() :: ChatConfig.t()
     def new(), do: %ChatConfig{}
 
-
     @spec update(
-      nil | SphinxBot.ConfigManager.ChatConfig.t() | any(),
-      {bitstring()} | {bitstring(), any()}
-    ) :: {:ok, any(), SphinxBot.ConfigManager.ChatConfig.t()} | :ignore
-    def update(%ChatConfig{halt: halt}=config, ["halt"]) do
+            nil | SphinxBot.ConfigManager.ChatConfig.t() | any(),
+            {bitstring()} | {bitstring(), any()}
+          ) :: {:ok, any(), SphinxBot.ConfigManager.ChatConfig.t()} | :ignore
+    def update(%ChatConfig{halt: halt} = config, ["halt"]) do
       Logger.debug("halt:: #{halt}")
       {:ok, !halt, %{config | halt: !halt}}
     end
 
-    def update(%ChatConfig{}=config,["riddle_duration", value])
-    when is_positive_integer(value) do
+    def update(%ChatConfig{} = config, ["riddle_duration", value])
+        when is_positive_integer(value) do
       {:ok, value, %{config | riddle_duration: value}}
     end
 
@@ -122,7 +122,7 @@ defmodule SphinxBot.ConfigManager do
       :ignore
     end
 
-    def as_map(%ChatConfig{}=config) do
+    def as_map(%ChatConfig{} = config) do
       Map.from_struct(config)
     end
   end

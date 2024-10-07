@@ -55,7 +55,7 @@ defmodule SphinxBot.RealBotLogic do
   @impl true
   @spec init(any()) :: {:ok, any()}
   def init(state) do
-    {:ok, Map.put(state,:paused, MapSet.new())}
+    {:ok, Map.put(state, :paused, MapSet.new())}
   end
 
   @impl true
@@ -94,19 +94,21 @@ defmodule SphinxBot.RealBotLogic do
 
   @impl true
   @spec handle_call({:new_chat_member, chat_user, send_func}, any(), map()) ::
-  {:reply, :ignore, map()} | {:reply, any(), map()}
-  def handle_call({:new_chat_member, {chat, _} = chat_user, send_riddle_func}, from,state) do
+          {:reply, :ignore, map()} | {:reply, any(), map()}
+  def handle_call({:new_chat_member, {chat, _} = chat_user, send_riddle_func}, from, state) do
     Infra.VisitLogger.log({:new_user, chat_user})
+
     if is_chat_paused(chat.id, state) do
       {:reply, :ignore, state}
     else
-   	  handle_call({:riddle, chat_user, send_riddle_func}, from, state)
+      handle_call({:riddle, chat_user, send_riddle_func}, from, state)
     end
   end
 
   @impl true
   def handle_cast({:left_chat_member, chat_user}, state) do
     Infra.VisitLogger.log({:left, chat_user})
+
     case Riddles.Store.get(riddle_store_key(chat_user)) do
       {:ok, {_, pid}} -> SphinxBot.WaitingUserAnswer.stop_waiting(pid)
       _ -> :do_nothing
@@ -122,7 +124,9 @@ defmodule SphinxBot.RealBotLogic do
       {:ok, {_, pid}} ->
         SphinxBot.WaitingUserAnswer.stop_waiting(pid)
         SphinxBot.Background.ban_user(chat.id, user.id)
-      _ -> :do_nothing
+
+      _ ->
+        :do_nothing
     end
 
     {:noreply, state}
@@ -144,16 +148,16 @@ defmodule SphinxBot.RealBotLogic do
     {:noreply, state}
   end
 
-  def handle_cast({:pause, chat_id}, %{paused: chat_ids}=state) do
+  def handle_cast({:pause, chat_id}, %{paused: chat_ids} = state) do
     new_chat_ids =
-    if is_chat_paused(chat_id, state) do
-      MapSet.delete(chat_id, chat_id)
-    else
-      MapSet.put(chat_ids, chat_id)
-    end
+      if is_chat_paused(chat_id, state) do
+        MapSet.delete(chat_id, chat_id)
+      else
+        MapSet.put(chat_ids, chat_id)
+      end
+
     {:noreply, %{state | paused: new_chat_ids}}
   end
-
 
   defp is_chat_paused(chat_id, %{paused: chat_ids}) do
     MapSet.member?(chat_ids, chat_id)
